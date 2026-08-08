@@ -123,8 +123,6 @@ $app->post(
         $proxy->forward($request, '/heartbeat', true)
 );
 
- internal gateway.
- */
 $app->any('/v1/hub[/{path:.*}]', function (
     ServerRequestInterface $request,
     ResponseInterface $response,

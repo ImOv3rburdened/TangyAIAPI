@@ -7,7 +7,7 @@ services:
     restart: unless-stopped
 
     environment:
-      HUB_BASE_URL: "${HUB_BASE_URL:-http://gateway:8000}"
+      HUB_BASE_URL: "${HUB_BASE_URL:-http://tangy-hub-gateway:8000}"
       HUB_REQUEST_TIMEOUT_SECONDS: "${HUB_REQUEST_TIMEOUT_SECONDS:-30}"
       MAX_REQUEST_BYTES: "${MAX_REQUEST_BYTES:-1048576}"
       APP_ENV: "${APP_ENV:-production}"

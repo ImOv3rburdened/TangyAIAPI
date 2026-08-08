@@ -18,6 +18,7 @@ services:
 
     networks:
       - tangy-api-link
+      - tangy-data-link
 
     healthcheck:
       test:
@@ -39,6 +40,13 @@ services:
       traefik.http.services.tangy-public-api.loadbalancer.server.port: "80"
 
 networks:
+  tangy-internal:
+    name: "${TANGY_INTERNAL_NETWORK:-tangy-internal}"
+
   tangy-api-link:
     external: true
     name: tangy-api-link
+
+  tangy-data-link:
+    external: true
+    name: tangy-data-link

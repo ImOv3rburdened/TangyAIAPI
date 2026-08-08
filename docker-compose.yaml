@@ -29,9 +29,10 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
-
+      
     labels:
       traefik.enable: "true"
+      traefik.docker.network: "micvxixes5ltmgwmmkk6pqpd"
       traefik.http.routers.tangy-public-api.rule: "Host(`api.tangycatteai.com`)"
       traefik.http.routers.tangy-public-api.entrypoints: "https"
       traefik.http.routers.tangy-public-api.tls: "true"

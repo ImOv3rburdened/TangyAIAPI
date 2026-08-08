@@ -1,0 +1,35 @@
+services:
+  tangy-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+
+    environment:
+      HUB_BASE_URL: "${HUB_BASE_URL:-http://gateway:8000}"
+      HUB_REQUEST_TIMEOUT_SECONDS: "${HUB_REQUEST_TIMEOUT_SECONDS:-30}"
+      MAX_REQUEST_BYTES: "${MAX_REQUEST_BYTES:-1048576}"
+      APP_ENV: "${APP_ENV:-production}"
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+
+    expose:
+      - "80"
+
+    healthcheck:
+      test:
+        - CMD
+        - php
+        - -r
+        - '$$c=@file_get_contents("http://127.0.0.1/health"); if($$c===false) exit(1);'
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.tangy-public-api.rule: "Host(`api.tangycatteai.com`)"
+      traefik.http.routers.tangy-public-api.entrypoints: "https"
+      traefik.http.routers.tangy-public-api.tls: "true"
+      traefik.http.routers.tangy-public-api.tls.certresolver: "letsencrypt"
+      traefik.http.services.tangy-public-api.loadbalancer.server.port: "80"

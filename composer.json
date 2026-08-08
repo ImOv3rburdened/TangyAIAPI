@@ -1,0 +1,15 @@
+{
+  "name": "tangycatte/tangy-ai-php-api",
+  "description": "Public PHP API edge for TangyAIHub.",
+  "type": "project",
+  "require": {
+    "php": "^8.4",
+    "slim/slim": "^4.0",
+    "slim/psr7": "^1.7"
+  },
+  "autoload": {
+    "psr-4": {
+      "TangyApi\\": "src/"
+    }
+  }
+}

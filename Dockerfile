@@ -8,14 +8,27 @@ RUN apt-get update \
     && docker-php-ext-install curl \
     && a2enmod rewrite headers \
     && sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
-    && sed -ri 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf \
+    && printf '%s\n' \
+       '<Directory /var/www/html/public>' \
+       '    AllowOverride All' \
+       '    Require all granted' \
+       '</Directory>' \
+       'ServerName localhost' \
+       > /etc/apache2/conf-available/tangy-api.conf \
+    && a2enconf tangy-api \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
+
 COPY composer.json composer.lock* ./
-RUN composer install --no-dev --no-interaction --no-progress --prefer-dist --optimize-autoloader
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --no-progress \
+    --prefer-dist \
+    --optimize-autoloader
 
 COPY . .
 

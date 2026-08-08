@@ -1,10 +1,11 @@
 <?php
-
 declare(strict_types=1);
 
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use Psr\Http\Server\RequestHandlerInterface;
 use Slim\Factory\AppFactory;
+use Slim\Psr7\Response;
 use TangyApi\Config;
 use TangyApi\HubProxy;
 
@@ -18,44 +19,51 @@ $app = AppFactory::create();
 $app->addBodyParsingMiddleware();
 $app->addRoutingMiddleware();
 
-$allowedOrigins = [
-    'https://tangycatteai.com',
-    'https://www.tangycatteai.com',
-];
-
 $app->add(function (
     ServerRequestInterface $request,
-    $handler
-) use ($allowedOrigins): ResponseInterface {
-    $response = $handler->handle($request);
-
+    RequestHandlerInterface $handler
+): ResponseInterface {
     $origin = $request->getHeaderLine('Origin');
 
-    if ($origin !== '' && in_array($origin, $allowedOrigins, true)) {
+    $allowedOrigins = [
+        'https://tangycatteai.com',
+        'https://www.tangycatteai.com',
+    ];
+
+    $isAllowedOrigin = in_array($origin, $allowedOrigins, true);
+
+    if (strtoupper($request->getMethod()) === 'OPTIONS') {
+        $response = new Response(204);
+
+        if ($isAllowedOrigin) {
+            $response = $response
+                ->withHeader('Access-Control-Allow-Origin', $origin)
+                ->withHeader('Access-Control-Allow-Credentials', 'true')
+                ->withHeader(
+                    'Access-Control-Allow-Methods',
+                    'GET, POST, PUT, PATCH, DELETE, OPTIONS'
+                )
+                ->withHeader(
+                    'Access-Control-Allow-Headers',
+                    'Authorization, Content-Type, Accept, Origin, X-Requested-With'
+                )
+                ->withHeader('Access-Control-Max-Age', '86400')
+                ->withHeader('Vary', 'Origin');
+        }
+
+        return $response;
+    }
+
+    $response = $handler->handle($request);
+    
+    if ($isAllowedOrigin) {
         $response = $response
             ->withHeader('Access-Control-Allow-Origin', $origin)
             ->withHeader('Access-Control-Allow-Credentials', 'true')
-            ->withHeader(
-                'Access-Control-Allow-Headers',
-                'Content-Type, Authorization, X-Requested-With'
-            )
-            ->withHeader(
-                'Access-Control-Allow-Methods',
-                'GET, POST, PUT, PATCH, DELETE, OPTIONS'
-            )
             ->withHeader('Vary', 'Origin');
     }
 
     return $response;
-});
-
-$app->options('/{routes:.*}', function (
-    ServerRequestInterface $request,
-    ResponseInterface $response
-): ResponseInterface {
-    return $response
-        ->withStatus(204)
-        ->withHeader('Cache-Control', 'no-store');
 });
 
 $errorMiddleware = $app->addErrorMiddleware(
@@ -84,11 +92,8 @@ $app->get(
     fn (
         ServerRequestInterface $request,
         ResponseInterface $response
-    ): ResponseInterface => $proxy->forward(
-        $request,
-        '/status/public',
-        false
-    )
+    ): ResponseInterface =>
+        $proxy->forward($request, '/status/public', false)
 );
 
 $app->post(
@@ -96,11 +101,8 @@ $app->post(
     fn (
         ServerRequestInterface $request,
         ResponseInterface $response
-    ): ResponseInterface => $proxy->forward(
-        $request,
-        '/auth/login',
-        false
-    )
+    ): ResponseInterface =>
+        $proxy->forward($request, '/auth/login', false)
 );
 
 $app->post(
@@ -108,11 +110,8 @@ $app->post(
     fn (
         ServerRequestInterface $request,
         ResponseInterface $response
-    ): ResponseInterface => $proxy->forward(
-        $request,
-        '/auth/logout',
-        true
-    )
+    ): ResponseInterface =>
+        $proxy->forward($request, '/auth/logout', true)
 );
 
 $app->post(
@@ -120,13 +119,12 @@ $app->post(
     fn (
         ServerRequestInterface $request,
         ResponseInterface $response
-    ): ResponseInterface => $proxy->forward(
-        $request,
-        '/heartbeat',
-        true
-    )
+    ): ResponseInterface =>
+        $proxy->forward($request, '/heartbeat', true)
 );
 
+ internal gateway.
+ */
 $app->any('/v1/hub[/{path:.*}]', function (
     ServerRequestInterface $request,
     ResponseInterface $response,
@@ -136,11 +134,7 @@ $app->any('/v1/hub[/{path:.*}]', function (
         ? '/' . ltrim((string) $args['path'], '/')
         : '/';
 
-    return $proxy->forward(
-        $request,
-        $path,
-        true
-    );
+    return $proxy->forward($request, $path, true);
 });
 
 $app->get('/', function (
